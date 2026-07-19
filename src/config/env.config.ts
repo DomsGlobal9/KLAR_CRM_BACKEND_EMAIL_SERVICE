@@ -3,28 +3,22 @@ import dotenv from "dotenv";
 dotenv.config();
 
 type EnvConfig = {
-    /**
-     * Application Configurations
-     */
     PORT: number;
     NODE_ENV: "development" | "production";
 
-    /**
-     * AWS Configurations
-     */
+    CORS_ORIGIN: string[];
+    CORS_METHODS: string[];
+    CORS_ALLOWED_HEADERS: string[];
+    CORS_CREDENTIALS: boolean;
+    CORS_MAX_AGE: number;
+
     AWS_ACCESS_KEY: string;
     AWS_SECRET_KEY: string;
     AWS_REGION: string;
     AWS_BUCKET_NAME: string;
 
-    /**
-     * Email Configurations
-     */
     SES_FROM_EMAIL: string;
 
-    /**
-     * SUPABASE Database URLs
-     */
     SUPABASE_DEVELOPMENT_DATABASE_URL: string;
     SUPABASE_PRODUCTION_DATABASE_URL: string;
 };
@@ -36,19 +30,38 @@ const requiredEnv = (key: string, value?: string): string => {
     return value;
 };
 
+const parseArray = (value?: string): string[] => {
+    if (!value) return [];
+    return value.split(',').map(item => item.trim());
+};
+
+const parseBoolean = (value?: string): boolean => {
+    return value?.toLowerCase() === 'true';
+};
+
+const parseNumber = (value?: string, defaultValue?: number): number => {
+    if (!value) return defaultValue || 0;
+    const parsed = Number(value);
+    return isNaN(parsed) ? defaultValue || 0 : parsed;
+};
+
 export const envConfig: EnvConfig = {
+    PORT: parseNumber(process.env.PORT, 5012),
+    NODE_ENV: (process.env.NODE_ENV as EnvConfig["NODE_ENV"]) || "development",
 
-    PORT: Number(process.env.PORT),
-    NODE_ENV: (process.env.NODE_ENV as EnvConfig["NODE_ENV"]),
+    CORS_ORIGIN: parseArray(process.env.CORS_ORIGIN),
+    CORS_METHODS: parseArray(process.env.CORS_METHODS),
+    CORS_ALLOWED_HEADERS: parseArray(process.env.CORS_ALLOWED_HEADERS),
+    CORS_CREDENTIALS: parseBoolean(process.env.CORS_CREDENTIALS),
+    CORS_MAX_AGE: parseNumber(process.env.CORS_MAX_AGE, 86400),
 
-    AWS_ACCESS_KEY: (process.env.AWS_ACCESS_KEY as EnvConfig["AWS_ACCESS_KEY"]),
-    AWS_SECRET_KEY: (process.env.AWS_SECRET_KEY as EnvConfig["AWS_SECRET_KEY"]),
-    AWS_REGION: (process.env.AWS_REGION as EnvConfig["AWS_REGION"]),
-    AWS_BUCKET_NAME: (process.env.AWS_BUCKET_NAME as EnvConfig["AWS_BUCKET_NAME"]),
+    AWS_ACCESS_KEY: requiredEnv("AWS_ACCESS_KEY", process.env.AWS_ACCESS_KEY),
+    AWS_SECRET_KEY: requiredEnv("AWS_SECRET_KEY", process.env.AWS_SECRET_KEY),
+    AWS_REGION: requiredEnv("AWS_REGION", process.env.AWS_REGION),
+    AWS_BUCKET_NAME: requiredEnv("AWS_BUCKET_NAME", process.env.AWS_BUCKET_NAME),
 
-    SES_FROM_EMAIL: (process.env.SES_FROM_EMAIL as EnvConfig["SES_FROM_EMAIL"]),
+    SES_FROM_EMAIL: requiredEnv("SES_FROM_EMAIL", process.env.SES_FROM_EMAIL),
 
-    SUPABASE_DEVELOPMENT_DATABASE_URL: (process.env.SUPABASE_DEVELOPMENT_DATABASE_URL as EnvConfig["SUPABASE_DEVELOPMENT_DATABASE_URL"]),
-    SUPABASE_PRODUCTION_DATABASE_URL: (process.env.SUPABASE_PRODUCTION_DATABASE_URL as EnvConfig["SUPABASE_PRODUCTION_DATABASE_URL"]),
-
+    SUPABASE_DEVELOPMENT_DATABASE_URL: requiredEnv("SUPABASE_DEVELOPMENT_DATABASE_URL", process.env.SUPABASE_DEVELOPMENT_DATABASE_URL),
+    SUPABASE_PRODUCTION_DATABASE_URL: requiredEnv("SUPABASE_PRODUCTION_DATABASE_URL", process.env.SUPABASE_PRODUCTION_DATABASE_URL),
 };
