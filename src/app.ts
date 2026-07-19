@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 
-app.use('/api/v1', routes);
+app.use('/api/emails', routes);
 
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'email-service' });
