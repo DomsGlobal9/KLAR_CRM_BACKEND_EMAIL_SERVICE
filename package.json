@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --exec tsx src/server.ts",
-    "build": "npm run clean && tsc",
+    "build": "npm run typecheck && tsc",
     "start": "tsx dist/server.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
