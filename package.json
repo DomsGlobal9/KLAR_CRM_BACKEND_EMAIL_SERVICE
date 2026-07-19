@@ -14,7 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "pm2:start": "npm run clean && npm run build && pm2 start dist/server.js --name klar-crm-backend-email-server",
+    "pm2:start": "pm2 start dist/server.js --name klar-crm-backend-email-server",
     "pm2:restart": "npm run clean && npm i && npm run build && pm2 restart klar-crm-backend-email-server",
     "pm2:stop": "pm2 stop klar-crm-backend-email-server",
     "pm2:delete": "pm2 delete klar-crm-backend-email-server",
