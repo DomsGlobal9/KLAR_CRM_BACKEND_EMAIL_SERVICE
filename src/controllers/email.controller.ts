@@ -4,7 +4,7 @@ import { emailService } from '../services/email.service';
 export const emailController = {
     async sendEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text, html, cc, bcc } = req.body;
+            const { to, subject, text, html, cc, bcc, leadId, contactId } = req.body;
 
             if (!to) {
                 return res.status(400).json({
@@ -34,6 +34,8 @@ export const emailController = {
                 html,
                 cc,
                 bcc,
+                leadId,
+                contactId,
             });
 
             if (!result.success) {
@@ -48,6 +50,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {
@@ -60,7 +63,7 @@ export const emailController = {
 
     async sendSimpleEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text } = req.body;
+            const { to, subject, text, leadId, contactId } = req.body;
 
             if (!to || !subject || !text) {
                 return res.status(400).json({
@@ -69,7 +72,7 @@ export const emailController = {
                 });
             }
 
-            const result = await emailService.sendSimpleEmail(to, subject, text);
+            const result = await emailService.sendSimpleEmail(to, subject, text, { leadId, contactId });
 
             if (!result.success) {
                 return res.status(500).json({
@@ -83,6 +86,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {
@@ -95,7 +99,7 @@ export const emailController = {
 
     async sendHtmlEmail(req: Request, res: Response) {
         try {
-            const { to, subject, html } = req.body;
+            const { to, subject, html, leadId, contactId } = req.body;
 
             if (!to || !subject || !html) {
                 return res.status(400).json({
@@ -104,7 +108,7 @@ export const emailController = {
                 });
             }
 
-            const result = await emailService.sendHtmlEmail(to, subject, html);
+            const result = await emailService.sendHtmlEmail(to, subject, html, { leadId, contactId });
 
             if (!result.success) {
                 return res.status(500).json({
@@ -118,6 +122,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {

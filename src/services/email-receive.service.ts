@@ -103,14 +103,32 @@ class EmailReceiveService {
     }
 
     private async saveIncomingEmail(parsedEmail: any) {
-        const trackingId = parsedEmail.inReplyTo
-            ? await this.getParentTrackingId(parsedEmail.inReplyTo) || randomUUID()
-            : randomUUID();
+        const toEmailArray = Array.isArray(parsedEmail.toEmail) 
+            ? parsedEmail.toEmail 
+            : (parsedEmail.toEmail ? [parsedEmail.toEmail] : []);
+
+        const isFromYourDomain = parsedEmail.fromEmail?.includes(emailConfig.domain) || 
+                                 parsedEmail.fromEmail === emailConfig.from;
+        
+        if (isFromYourDomain && toEmailArray.length > 0) {
+            const existingOutgoing = await emailMessageRepository.findOutgoingBySubjectAndTo(
+                parsedEmail.subject,
+                toEmailArray
+            );
+            
+            if (existingOutgoing) {
+                return existingOutgoing;
+            }
+        }
 
         const existingEmail = await emailMessageRepository.getByMessageId(parsedEmail.messageId);
         if (existingEmail) {
             return existingEmail;
         }
+
+        const trackingId = parsedEmail.inReplyTo
+            ? await this.getParentTrackingId(parsedEmail.inReplyTo) || randomUUID()
+            : randomUUID();
 
         const emailData = {
             trackingId,
@@ -123,9 +141,9 @@ class EmailReceiveService {
             direction: 'incoming',
             fromEmail: parsedEmail.fromEmail,
             fromName: parsedEmail.fromName,
-            toEmail: parsedEmail.toEmail || [],
-            ccEmail: parsedEmail.ccEmail || [],
-            bccEmail: parsedEmail.bccEmail || [],
+            toEmail: toEmailArray,
+            ccEmail: Array.isArray(parsedEmail.ccEmail) ? parsedEmail.ccEmail : (parsedEmail.ccEmail ? [parsedEmail.ccEmail] : []),
+            bccEmail: Array.isArray(parsedEmail.bccEmail) ? parsedEmail.bccEmail : (parsedEmail.bccEmail ? [parsedEmail.bccEmail] : []),
             subject: parsedEmail.subject,
             body: parsedEmail.text,
             htmlBody: parsedEmail.html,

@@ -111,8 +111,17 @@ export const emailMessageRepository = {
             .orderBy(desc(emailMessages.createdAt));
     },
 
-    async updateStatus(id: string, status: string, error?: string) {
-        const updateData: any = { status, updatedAt: new Date() };
+    async updateStatus(id: string, status: string, messageId?: string, error?: string) {
+        const updateData: any = { 
+            status, 
+            updatedAt: new Date() 
+        };
+        
+        if (messageId) {
+            updateData.messageId = messageId;
+            updateData.sentAt = new Date();
+        }
+        
         if (error) {
             updateData.error = error;
         }
@@ -181,5 +190,25 @@ export const emailMessageRepository = {
             .where(eq(emailMessages.id, id))
             .returning();
         return result;
+    },
+
+    async findOutgoingBySubjectAndTo(subject: string, toEmail: string[]) {
+        if (!toEmail || toEmail.length === 0) {
+            return null;
+        }
+
+        const toEmailString = toEmail[0];
+        
+        const [result] = await db.select()
+            .from(emailMessages)
+            .where(and(
+                eq(emailMessages.subject, subject),
+                eq(emailMessages.direction, 'outgoing'),
+                sql`${toEmailString} = ANY(${emailMessages.toEmail})`,
+                sql`${emailMessages.createdAt} > NOW() - INTERVAL '5 minutes'`
+            ))
+            .orderBy(desc(emailMessages.createdAt))
+            .limit(1);
+        return result || null;
     },
 };
