@@ -121,10 +121,10 @@ export class EmailService {
         });
     }
 
-    async sendBulkEmails(emails: Array<{ 
-        to: string; 
-        subject: string; 
-        text?: string; 
+    async sendBulkEmails(emails: Array<{
+        to: string;
+        subject: string;
+        text?: string;
         html?: string;
         leadId?: string;
         contactId?: string;
@@ -156,6 +156,14 @@ export class EmailService {
             failed: failCount,
             results,
         };
+    }
+
+    async getAllEmails(options?: { limit?: number; offset?: number; direction?: 'incoming' | 'outgoing' }) {
+        return await emailMessageRepository.getAllEmails(options);
+    }
+
+    async getEmailById(id: string) {
+        return await emailMessageRepository.getById(id);
     }
 }
 

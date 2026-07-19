@@ -163,4 +163,62 @@ export const emailController = {
             });
         }
     },
+
+
+    async getAllEmails(req: Request, res: Response) {
+        try {
+            const { limit, offset, direction } = req.query;
+
+            const emails = await emailService.getAllEmails({
+                limit: limit ? parseInt(limit as string) : undefined,
+                offset: offset ? parseInt(offset as string) : undefined,
+                direction: direction as 'incoming' | 'outgoing' | undefined,
+            });
+
+            return res.status(200).json({
+                success: true,
+                count: emails.length,
+                data: emails,
+            });
+        } catch (error: any) {
+            console.error('[Get All Emails] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    async getEmailById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email ID is required',
+                });
+            }
+
+            const email = await emailService.getEmailById(id as string);
+
+            if (!email) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Email not found',
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: email,
+            });
+        } catch (error: any) {
+            console.error('[Get Email By Id] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
 };

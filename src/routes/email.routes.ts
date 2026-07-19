@@ -24,4 +24,9 @@ router.post('/send-bulk', emailController.sendBulkEmails);
  */
 router.post('/send-simple', emailController.sendSimpleEmail);
 
+
+router.get('/all', emailController.getAllEmails);
+router.get('/:id', emailController.getEmailById);
+
+
 export default router;

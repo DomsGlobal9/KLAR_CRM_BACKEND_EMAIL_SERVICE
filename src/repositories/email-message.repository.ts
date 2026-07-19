@@ -26,14 +26,14 @@ export const emailMessageRepository = {
             .from(emailMessages)
             .where(eq(emailMessages.direction, 'incoming'))
             .orderBy(desc(emailMessages.createdAt));
-        
+
         if (limit) {
             query.limit(limit);
         }
         if (offset) {
             query.offset(offset);
         }
-        
+
         return await query;
     },
 
@@ -42,14 +42,14 @@ export const emailMessageRepository = {
             .from(emailMessages)
             .where(eq(emailMessages.direction, 'outgoing'))
             .orderBy(desc(emailMessages.createdAt));
-        
+
         if (limit) {
             query.limit(limit);
         }
         if (offset) {
             query.offset(offset);
         }
-        
+
         return await query;
     },
 
@@ -112,20 +112,20 @@ export const emailMessageRepository = {
     },
 
     async updateStatus(id: string, status: string, messageId?: string, error?: string) {
-        const updateData: any = { 
-            status, 
-            updatedAt: new Date() 
+        const updateData: any = {
+            status,
+            updatedAt: new Date()
         };
-        
+
         if (messageId) {
             updateData.messageId = messageId;
             updateData.sentAt = new Date();
         }
-        
+
         if (error) {
             updateData.error = error;
         }
-        
+
         const [result] = await db.update(emailMessages)
             .set(updateData)
             .where(eq(emailMessages.id, id))
@@ -198,7 +198,7 @@ export const emailMessageRepository = {
         }
 
         const toEmailString = toEmail[0];
-        
+
         const [result] = await db.select()
             .from(emailMessages)
             .where(and(
@@ -211,4 +211,24 @@ export const emailMessageRepository = {
             .limit(1);
         return result || null;
     },
+
+    async getAllEmails(options?: { limit?: number; offset?: number; direction?: 'incoming' | 'outgoing' }) {
+        const query = db.select()
+            .from(emailMessages)
+            .orderBy(desc(emailMessages.createdAt));
+
+        if (options?.direction) {
+            query.where(eq(emailMessages.direction, options.direction));
+        }
+
+        if (options?.limit) {
+            query.limit(options.limit);
+        }
+
+        if (options?.offset) {
+            query.offset(options.offset);
+        }
+
+        return await query;
+    }
 };
