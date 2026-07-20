@@ -4,7 +4,7 @@ import { emailService } from '../services/email.service';
 export const emailController = {
     async sendEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text, html, cc, bcc } = req.body;
+            const { to, subject, text, html, cc, bcc, leadId, contactId } = req.body;
 
             if (!to) {
                 return res.status(400).json({
@@ -34,6 +34,8 @@ export const emailController = {
                 html,
                 cc,
                 bcc,
+                leadId,
+                contactId,
             });
 
             if (!result.success) {
@@ -48,6 +50,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {
@@ -60,7 +63,7 @@ export const emailController = {
 
     async sendSimpleEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text } = req.body;
+            const { to, subject, text, leadId, contactId } = req.body;
 
             if (!to || !subject || !text) {
                 return res.status(400).json({
@@ -69,7 +72,7 @@ export const emailController = {
                 });
             }
 
-            const result = await emailService.sendSimpleEmail(to, subject, text);
+            const result = await emailService.sendSimpleEmail(to, subject, text, { leadId, contactId });
 
             if (!result.success) {
                 return res.status(500).json({
@@ -83,6 +86,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {
@@ -95,7 +99,7 @@ export const emailController = {
 
     async sendHtmlEmail(req: Request, res: Response) {
         try {
-            const { to, subject, html } = req.body;
+            const { to, subject, html, leadId, contactId } = req.body;
 
             if (!to || !subject || !html) {
                 return res.status(400).json({
@@ -104,7 +108,7 @@ export const emailController = {
                 });
             }
 
-            const result = await emailService.sendHtmlEmail(to, subject, html);
+            const result = await emailService.sendHtmlEmail(to, subject, html, { leadId, contactId });
 
             if (!result.success) {
                 return res.status(500).json({
@@ -118,6 +122,7 @@ export const emailController = {
                 message: 'Email sent successfully',
                 data: {
                     messageId: result.messageId,
+                    trackingId: result.trackingId,
                 },
             });
         } catch (error: any) {
@@ -155,6 +160,64 @@ export const emailController = {
             res.status(500).json({
                 success: false,
                 error: error.message,
+            });
+        }
+    },
+
+
+    async getAllEmails(req: Request, res: Response) {
+        try {
+            const { limit, offset, direction } = req.query;
+
+            const emails = await emailService.getAllEmails({
+                limit: limit ? parseInt(limit as string) : undefined,
+                offset: offset ? parseInt(offset as string) : undefined,
+                direction: direction as 'incoming' | 'outgoing' | undefined,
+            });
+
+            return res.status(200).json({
+                success: true,
+                count: emails.length,
+                data: emails,
+            });
+        } catch (error: any) {
+            console.error('[Get All Emails] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    async getEmailById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email ID is required',
+                });
+            }
+
+            const email = await emailService.getEmailById(id as string);
+
+            if (!email) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Email not found',
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: email,
+            });
+        } catch (error: any) {
+            console.error('[Get Email By Id] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
             });
         }
     },

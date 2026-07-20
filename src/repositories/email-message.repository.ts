@@ -26,14 +26,14 @@ export const emailMessageRepository = {
             .from(emailMessages)
             .where(eq(emailMessages.direction, 'incoming'))
             .orderBy(desc(emailMessages.createdAt));
-        
+
         if (limit) {
             query.limit(limit);
         }
         if (offset) {
             query.offset(offset);
         }
-        
+
         return await query;
     },
 
@@ -42,14 +42,14 @@ export const emailMessageRepository = {
             .from(emailMessages)
             .where(eq(emailMessages.direction, 'outgoing'))
             .orderBy(desc(emailMessages.createdAt));
-        
+
         if (limit) {
             query.limit(limit);
         }
         if (offset) {
             query.offset(offset);
         }
-        
+
         return await query;
     },
 
@@ -111,12 +111,21 @@ export const emailMessageRepository = {
             .orderBy(desc(emailMessages.createdAt));
     },
 
-    async updateStatus(id: string, status: string, error?: string) {
-        const updateData: any = { status, updatedAt: new Date() };
+    async updateStatus(id: string, status: string, messageId?: string, error?: string) {
+        const updateData: any = {
+            status,
+            updatedAt: new Date()
+        };
+
+        if (messageId) {
+            updateData.messageId = messageId;
+            updateData.sentAt = new Date();
+        }
+
         if (error) {
             updateData.error = error;
         }
-        
+
         const [result] = await db.update(emailMessages)
             .set(updateData)
             .where(eq(emailMessages.id, id))
@@ -182,4 +191,44 @@ export const emailMessageRepository = {
             .returning();
         return result;
     },
+
+    async findOutgoingBySubjectAndTo(subject: string, toEmail: string[]) {
+        if (!toEmail || toEmail.length === 0) {
+            return null;
+        }
+
+        const toEmailString = toEmail[0];
+
+        const [result] = await db.select()
+            .from(emailMessages)
+            .where(and(
+                eq(emailMessages.subject, subject),
+                eq(emailMessages.direction, 'outgoing'),
+                sql`${toEmailString} = ANY(${emailMessages.toEmail})`,
+                sql`${emailMessages.createdAt} > NOW() - INTERVAL '5 minutes'`
+            ))
+            .orderBy(desc(emailMessages.createdAt))
+            .limit(1);
+        return result || null;
+    },
+
+    async getAllEmails(options?: { limit?: number; offset?: number; direction?: 'incoming' | 'outgoing' }) {
+        const query = db.select()
+            .from(emailMessages)
+            .orderBy(desc(emailMessages.createdAt));
+
+        if (options?.direction) {
+            query.where(eq(emailMessages.direction, options.direction));
+        }
+
+        if (options?.limit) {
+            query.limit(options.limit);
+        }
+
+        if (options?.offset) {
+            query.offset(options.offset);
+        }
+
+        return await query;
+    }
 };
