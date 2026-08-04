@@ -1,18 +1,15 @@
-import { SESClient, SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-ses';
 import { emailConfig, EmailOptions } from '../config/email.config';
 import { emailMessageRepository } from '../repositories/email-message.repository';
 import { randomUUID } from 'crypto';
+import {
+    enqueueEmailJob,
+    enqueueBulkEmailJobs,
+    getEmailQueueMetrics,
+    getJobById,
+    EmailJobData,
+} from '../queues/email.queue';
 
 export class EmailService {
-    private ses: SESClient;
-
-    constructor() {
-        this.ses = new SESClient({
-            region: emailConfig.region,
-            credentials: emailConfig.credentials,
-        });
-    }
-
     async sendEmail(options: EmailOptions): Promise<any> {
         const trackingId = options.trackingId || randomUUID();
         let savedEmail = null;
@@ -39,7 +36,7 @@ export class EmailService {
                 htmlBody: options.html || null,
                 attachments: [],
                 rawHeaders: null,
-                status: 'sending',
+                status: 'queued',
                 error: null,
                 leadId: options.leadId || null,
                 contactId: options.contactId || null,
@@ -50,44 +47,24 @@ export class EmailService {
 
             savedEmail = await emailMessageRepository.saveOutgoingEmail(emailData);
 
-            const params: SendEmailCommandInput = {
-                Source: emailConfig.from,
-                Destination: {
-                    ToAddresses: toAddresses,
-                    CcAddresses: ccAddresses.length > 0 ? ccAddresses : undefined,
-                    BccAddresses: bccAddresses.length > 0 ? bccAddresses : undefined,
-                },
-                Message: {
-                    Subject: {
-                        Data: options.subject,
-                        Charset: 'UTF-8',
-                    },
-                    Body: {
-                        Text: options.text ? {
-                            Data: options.text,
-                            Charset: 'UTF-8',
-                        } : undefined,
-                        Html: options.html ? {
-                            Data: options.html,
-                            Charset: 'UTF-8',
-                        } : undefined,
-                    },
-                },
+            const jobPayload: EmailJobData = {
+                dbId: savedEmail.id,
+                trackingId,
+                options,
             };
 
-            const command = new SendEmailCommand(params);
-            const result = await this.ses.send(command);
-
-            await emailMessageRepository.updateStatus(savedEmail.id, 'sent', result.MessageId);
+            const queueResult = await enqueueEmailJob(jobPayload);
 
             return {
                 success: true,
-                messageId: result.MessageId,
-                trackingId: trackingId,
+                status: 'queued',
+                message: 'Email queued for processing',
+                jobId: queueResult.jobId,
+                trackingId,
                 dbId: savedEmail.id,
             };
         } catch (error: any) {
-            console.error('Email send error:', error);
+            console.error('Email queue dispatch error:', error);
 
             if (savedEmail) {
                 await emailMessageRepository.updateStatus(savedEmail.id, 'failed', undefined, error.message);
@@ -95,13 +72,19 @@ export class EmailService {
 
             return {
                 success: false,
+                status: 'failed',
                 error: error.message,
-                trackingId: trackingId,
+                trackingId,
             };
         }
     }
 
-    async sendSimpleEmail(to: string, subject: string, text: string, options?: { leadId?: string; contactId?: string }): Promise<any> {
+    async sendSimpleEmail(
+        to: string,
+        subject: string,
+        text: string,
+        options?: { leadId?: string; contactId?: string }
+    ): Promise<any> {
         return this.sendEmail({
             to,
             subject,
@@ -111,7 +94,12 @@ export class EmailService {
         });
     }
 
-    async sendHtmlEmail(to: string, subject: string, html: string, options?: { leadId?: string; contactId?: string }): Promise<any> {
+    async sendHtmlEmail(
+        to: string,
+        subject: string,
+        html: string,
+        options?: { leadId?: string; contactId?: string }
+    ): Promise<any> {
         return this.sendEmail({
             to,
             subject,
@@ -121,41 +109,83 @@ export class EmailService {
         });
     }
 
-    async sendBulkEmails(emails: Array<{
-        to: string;
-        subject: string;
-        text?: string;
-        html?: string;
-        leadId?: string;
-        contactId?: string;
-    }>): Promise<any> {
-        const results = [];
-        let successCount = 0;
-        let failCount = 0;
+    async sendBulkEmails(
+        emails: Array<{
+            to: string;
+            subject: string;
+            text?: string;
+            html?: string;
+            leadId?: string;
+            contactId?: string;
+        }>
+    ): Promise<any> {
+        const bulkJobsData: EmailJobData[] = [];
+        const savedEmails: any[] = [];
 
         for (const email of emails) {
-            const result = await this.sendEmail({
-                to: email.to,
+            const trackingId = randomUUID();
+            const toAddresses = [email.to];
+
+            const emailData = {
+                trackingId,
+                parentTrackingId: null,
+                messageId: null,
+                inReplyTo: null,
+                references: null,
+                direction: 'outgoing',
+                fromEmail: emailConfig.from,
+                fromName: null,
+                toEmail: toAddresses,
+                ccEmail: [],
+                bccEmail: [],
                 subject: email.subject,
-                text: email.text,
-                html: email.html,
-                leadId: email.leadId,
-                contactId: email.contactId,
+                body: email.text || null,
+                htmlBody: email.html || null,
+                attachments: [],
+                rawHeaders: null,
+                status: 'queued',
+                error: null,
+                leadId: email.leadId || null,
+                contactId: email.contactId || null,
+                isRead: false,
+                sentAt: null,
+                receivedAt: null,
+            };
+
+            const saved = await emailMessageRepository.saveOutgoingEmail(emailData);
+            savedEmails.push(saved);
+
+            bulkJobsData.push({
+                dbId: saved.id,
+                trackingId,
+                options: {
+                    to: email.to,
+                    subject: email.subject,
+                    text: email.text,
+                    html: email.html,
+                    leadId: email.leadId,
+                    contactId: email.contactId,
+                    trackingId,
+                },
             });
-            results.push(result);
-            if (result.success) {
-                successCount++;
-            } else {
-                failCount++;
-            }
         }
+
+        const queuedJobs = await enqueueBulkEmailJobs(bulkJobsData);
 
         return {
             total: emails.length,
-            success: successCount,
-            failed: failCount,
-            results,
+            queued: queuedJobs.length,
+            status: 'queued',
+            jobs: queuedJobs,
         };
+    }
+
+    async getQueueStatus() {
+        return await getEmailQueueMetrics();
+    }
+
+    async getQueueJob(jobId: string) {
+        return await getJobById(jobId);
     }
 
     async getAllEmails(options?: { limit?: number; offset?: number; direction?: 'incoming' | 'outgoing' }) {

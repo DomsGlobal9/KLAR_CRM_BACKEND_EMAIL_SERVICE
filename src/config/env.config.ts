@@ -22,6 +22,11 @@ type EnvConfig = {
 
     SUPABASE_DEVELOPMENT_DATABASE_URL: string;
     SUPABASE_PRODUCTION_DATABASE_URL: string;
+
+    REDIS_HOST: string;
+    REDIS_PORT: number;
+    REDIS_PASSWORD?: string;
+    REDIS_DB: number;
 };
 
 const requiredEnv = (key: string, value?: string): string => {
@@ -66,4 +71,9 @@ export const envConfig: EnvConfig = {
 
     SUPABASE_DEVELOPMENT_DATABASE_URL: requiredEnv("SUPABASE_DEVELOPMENT_DATABASE_URL", process.env.SUPABASE_DEVELOPMENT_DATABASE_URL),
     SUPABASE_PRODUCTION_DATABASE_URL: requiredEnv("SUPABASE_PRODUCTION_DATABASE_URL", process.env.SUPABASE_PRODUCTION_DATABASE_URL),
+
+    REDIS_HOST: process.env.REDIS_HOST || "localhost",
+    REDIS_PORT: parseNumber(process.env.REDIS_PORT, 6379),
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined,
+    REDIS_DB: parseNumber(process.env.REDIS_DB, 0),
 };
