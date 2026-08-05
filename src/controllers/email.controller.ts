@@ -45,12 +45,14 @@ export const emailController = {
                 });
             }
 
-            res.json({
+            res.status(202).json({
                 success: true,
-                message: 'Email sent successfully',
+                status: 'queued',
+                message: 'Email queued successfully for delivery',
                 data: {
-                    messageId: result.messageId,
+                    jobId: result.jobId,
                     trackingId: result.trackingId,
+                    dbId: result.dbId,
                 },
             });
         } catch (error: any) {
@@ -81,12 +83,14 @@ export const emailController = {
                 });
             }
 
-            res.json({
+            res.status(202).json({
                 success: true,
-                message: 'Email sent successfully',
+                status: 'queued',
+                message: 'Email queued successfully for delivery',
                 data: {
-                    messageId: result.messageId,
+                    jobId: result.jobId,
                     trackingId: result.trackingId,
+                    dbId: result.dbId,
                 },
             });
         } catch (error: any) {
@@ -117,12 +121,14 @@ export const emailController = {
                 });
             }
 
-            res.json({
+            res.status(202).json({
                 success: true,
-                message: 'Email sent successfully',
+                status: 'queued',
+                message: 'Email queued successfully for delivery',
                 data: {
-                    messageId: result.messageId,
+                    jobId: result.jobId,
                     trackingId: result.trackingId,
+                    dbId: result.dbId,
                 },
             });
         } catch (error: any) {
@@ -146,14 +152,14 @@ export const emailController = {
 
             const result = await emailService.sendBulkEmails(emails);
 
-            res.json({
+            res.status(202).json({
                 success: true,
-                message: `Sent ${result.success} out of ${result.total} emails`,
+                status: 'queued',
+                message: `Queued ${result.queued} out of ${result.total} emails for background delivery`,
                 data: {
                     total: result.total,
-                    successCount: result.success,
-                    failedCount: result.failed,
-                    results: result.results,
+                    queuedCount: result.queued,
+                    jobs: result.jobs,
                 },
             });
         } catch (error: any) {
@@ -164,6 +170,52 @@ export const emailController = {
         }
     },
 
+    async getQueueStatus(req: Request, res: Response) {
+        try {
+            const metrics = await emailService.getQueueStatus();
+            return res.status(200).json({
+                success: true,
+                data: metrics,
+            });
+        } catch (error: any) {
+            console.error('[Get Queue Status] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
+
+    async getQueueJob(req: Request, res: Response) {
+        try {
+            const jobId = req.params.jobId as string;
+            if (!jobId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Job ID is required',
+                });
+            }
+
+            const job = await emailService.getQueueJob(jobId);
+            if (!job) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Job not found in queue',
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: job,
+            });
+        } catch (error: any) {
+            console.error('[Get Queue Job] Error:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+            });
+        }
+    },
 
     async getAllEmails(req: Request, res: Response) {
         try {

@@ -29,6 +29,9 @@ export const emailMessages = pgTable('email_messages', {
 
     leadId: uuid('lead_id'),
     contactId: uuid('contact_id'),
+    userId: uuid('user_id'),
+    senderName: text('sender_name'),
+    senderEmail: text('sender_email'),
     isRead: boolean('is_read').default(false),
 
     sentAt: timestamp('sent_at'),
@@ -41,6 +44,7 @@ export const emailMessages = pgTable('email_messages', {
     messageIdIdx: index('idx_email_messages_message_id').on(table.messageId),
     leadIdIdx: index('idx_email_messages_lead_id').on(table.leadId),
     contactIdIdx: index('idx_email_messages_contact_id').on(table.contactId),
+    userIdIdx: index('idx_email_messages_user_id').on(table.userId),
     directionIdx: index('idx_email_messages_direction').on(table.direction),
     createdAtIdx: index('idx_email_messages_created_at').on(table.createdAt),
     sentAtIdx: index('idx_email_messages_sent_at').on(table.sentAt),
