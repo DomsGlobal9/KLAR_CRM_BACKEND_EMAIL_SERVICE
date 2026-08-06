@@ -13,6 +13,9 @@ export interface EmailOptions {
     parentTrackingId?: string;
     inReplyTo?: string;
     references?: string;
+    userId?: string;
+    user_mail?: string,
+    user_name?: string
     attachments?: Array<{
         filename: string;
         path?: string;

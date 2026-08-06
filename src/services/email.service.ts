@@ -43,6 +43,9 @@ export class EmailService {
                 isRead: false,
                 sentAt: null,
                 receivedAt: null,
+                userId: options.userId || null,
+                senderName: options.user_name || null,
+                senderEmail: options.user_mail || null,
             };
 
             savedEmail = await emailMessageRepository.saveOutgoingEmail(emailData);
@@ -83,7 +86,8 @@ export class EmailService {
         to: string,
         subject: string,
         text: string,
-        options?: { leadId?: string; contactId?: string }
+        options?: { leadId?: string; contactId?: string },
+        userId?: string
     ): Promise<any> {
         return this.sendEmail({
             to,
@@ -91,6 +95,7 @@ export class EmailService {
             text,
             leadId: options?.leadId,
             contactId: options?.contactId,
+            userId,
         });
     }
 
