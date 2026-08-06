@@ -152,9 +152,9 @@ export class EmailService {
                 error: null,
                 leadId: email.leadId || null,
                 contactId: email.contactId || null,
-                isRead: false,
-                sentAt: null,
-                receivedAt: null,
+                userId: (email as any).userId || (email as any).user_id || null,
+                senderName: (email as any).senderName || (email as any).user_name || (email as any).userName || null,
+                senderEmail: (email as any).senderEmail || (email as any).user_mail || (email as any).user_email || (email as any).userMail || null,
             };
 
             const saved = await emailMessageRepository.saveOutgoingEmail(emailData);
