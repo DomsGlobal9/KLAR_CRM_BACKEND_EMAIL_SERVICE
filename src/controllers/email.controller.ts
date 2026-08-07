@@ -5,7 +5,7 @@ export const emailController = {
     
     async sendEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text, html, cc, bcc, leadId, contactId, userId, user_mail, user_name } = req.body;
+            const { to, subject, text, html, cc, bcc, leadId, contactId, userId, user_mail, user_name, attachments } = req.body;
 
             if (!to) {
                 return res.status(400).json({
@@ -27,7 +27,7 @@ export const emailController = {
                     error: 'Either text or html content is required',
                 });
             }
- 
+
             const result = await emailService.sendEmail({
                 to,
                 subject,
@@ -39,7 +39,8 @@ export const emailController = {
                 contactId,
                 userId,
                 user_mail,
-                user_name
+                user_name,
+                attachments
             });
 
             if (!result.success) {

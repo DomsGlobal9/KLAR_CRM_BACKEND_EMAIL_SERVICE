@@ -34,7 +34,7 @@ export class EmailService {
                 subject: options.subject,
                 body: options.text || null,
                 htmlBody: options.html || null,
-                attachments: [],
+                attachments: options.attachments || [],
                 rawHeaders: null,
                 status: 'queued',
                 error: null,
