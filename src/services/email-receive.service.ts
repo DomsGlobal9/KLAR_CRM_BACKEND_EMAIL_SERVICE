@@ -26,7 +26,7 @@ class EmailReceiveService {
 
         if (payload.Type === 'Notification') {
             let message = payload.Message;
-            
+
             if (typeof message === 'string') {
                 try {
                     message = JSON.parse(message);
@@ -42,11 +42,11 @@ class EmailReceiveService {
             if (message.receipt?.action?.type === 'S3') {
                 bucket = message.receipt.action.bucketName || message.receipt.action.bucket;
                 key = message.receipt.action.objectKey || message.receipt.action.objectKeyName;
-                
+
                 if (!bucket || !key) {
                     throw new Error('Missing bucket or key in SNS message');
                 }
-                
+
                 email = await this.downloadEmail(bucket, key);
             } else if (message.content) {
                 const emailContent = Buffer.from(message.content, 'base64').toString('utf-8');
@@ -103,19 +103,19 @@ class EmailReceiveService {
     }
 
     private async saveIncomingEmail(parsedEmail: any) {
-        const toEmailArray = Array.isArray(parsedEmail.toEmail) 
-            ? parsedEmail.toEmail 
+        const toEmailArray = Array.isArray(parsedEmail.toEmail)
+            ? parsedEmail.toEmail
             : (parsedEmail.toEmail ? [parsedEmail.toEmail] : []);
 
-        const isFromYourDomain = parsedEmail.fromEmail?.includes(emailConfig.domain) || 
-                                 parsedEmail.fromEmail === emailConfig.from;
-        
+        const isFromYourDomain = parsedEmail.fromEmail?.includes(emailConfig.domain) ||
+            parsedEmail.fromEmail === emailConfig.from;
+
         if (isFromYourDomain && toEmailArray.length > 0) {
             const existingOutgoing = await emailMessageRepository.findOutgoingBySubjectAndTo(
                 parsedEmail.subject,
                 toEmailArray
             );
-            
+
             if (existingOutgoing) {
                 return existingOutgoing;
             }
@@ -123,6 +123,14 @@ class EmailReceiveService {
 
         const existingEmail = await emailMessageRepository.getByMessageId(parsedEmail.messageId);
         if (existingEmail) {
+            if ((!existingEmail.body || existingEmail.body.trim() === '' || !existingEmail.htmlBody || existingEmail.htmlBody.trim() === '') && (parsedEmail.text || parsedEmail.html)) {
+                const updated = await emailMessageRepository.updateEmailBody(
+                    existingEmail.id,
+                    parsedEmail.text || '',
+                    parsedEmail.html || ''
+                );
+                return updated || existingEmail;
+            }
             return existingEmail;
         }
 
@@ -211,6 +219,31 @@ class EmailReceiveService {
         const ccDetails = getEmailDetails(email.cc);
         const bccDetails = getEmailDetails(email.bcc);
 
+        let rawHtml: string | undefined = undefined;
+        if (typeof email.html === 'string' && email.html.trim().length > 0) {
+            rawHtml = email.html;
+        } else if (typeof email.textAsHtml === 'string' && email.textAsHtml.trim().length > 0) {
+            rawHtml = email.textAsHtml;
+        }
+
+        let rawText: string | undefined = undefined;
+        if (typeof email.text === 'string' && email.text.trim().length > 0) {
+            rawText = email.text;
+        }
+
+        // Clean HTML
+        const htmlContent = rawHtml ? this.cleanHtml(rawHtml) : undefined;
+
+        // Convert HTML to clean plain text if text is missing or single-line (Titan Mail)
+        let textContent = rawText;
+        if (!textContent && htmlContent) {
+            textContent = this.htmlToText(htmlContent);
+        } else if (textContent && htmlContent && !textContent.includes('\n') && htmlContent.includes('</div>')) {
+            textContent = this.htmlToText(htmlContent);
+        }
+
+        const finalHtml = htmlContent || (textContent ? `<div style="font-family: sans-serif; white-space: pre-wrap;">${textContent}</div>` : '');
+
         return {
             messageId: email.messageId,
             from: fromDetails.text,
@@ -222,9 +255,9 @@ class EmailReceiveService {
             ccEmail: ccDetails.addresses,
             bcc: bccDetails.text,
             bccEmail: bccDetails.addresses,
-            subject: email.subject,
-            text: email.text,
-            html: email.html,
+            subject: email.subject || '',
+            text: textContent || '',
+            html: finalHtml || '',
             date: email.date,
             inReplyTo: email.inReplyTo,
             references: email.references,
@@ -235,6 +268,38 @@ class EmailReceiveService {
                 size: a.size
             })) || []
         };
+    }
+
+    private cleanHtml(html: string): string {
+        if (!html) return '';
+        return html
+            .replace(/<img[^>]*class=["']?[^"']*flm-open[^"']*["']?[^>]*>/gi, '')
+            .replace(/<img[^>]*width=["']?0["']?[^>]*height=["']?0["']?[^>]*>/gi, '')
+            .trim();
+    }
+
+    private htmlToText(html: string): string {
+        if (!html) return '';
+        return html
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<br\s*[\/]?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<\/h[1-6]>/gi, '\n\n')
+            .replace(/<\/li>/gi, '\n')
+            .replace(/<\/tr>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n[ \t]+/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
     }
 
     private async downloadEmail(bucket: string, key: string) {

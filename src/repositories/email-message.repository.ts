@@ -141,6 +141,14 @@ export const emailMessageRepository = {
         return result;
     },
 
+    async updateEmailBody(id: string, body: string, htmlBody: string) {
+        const [result] = await db.update(emailMessages)
+            .set({ body, htmlBody, updatedAt: new Date() })
+            .where(eq(emailMessages.id, id))
+            .returning();
+        return result;
+    },
+
     async checkReplyExists(trackingId: string, inReplyTo: string) {
         const [result] = await db.select()
             .from(emailMessages)
