@@ -265,7 +265,8 @@ class EmailReceiveService {
             attachments: email.attachments?.map((a: any) => ({
                 filename: a.filename,
                 contentType: a.contentType,
-                size: a.size
+                size: a.size,
+                content: a.content ? `data:${a.contentType || 'application/octet-stream'};base64,${a.content.toString('base64')}` : undefined
             })) || []
         };
     }
