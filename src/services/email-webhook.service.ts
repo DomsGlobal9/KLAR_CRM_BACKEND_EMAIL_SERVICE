@@ -66,6 +66,7 @@ export const emailWebhookService = {
                         filename: a.filename,
                         contentType: a.contentType,
                         size: a.size,
+                        content: a.content ? `data:${a.contentType || 'application/octet-stream'};base64,${a.content.toString('base64')}` : undefined,
                     })) || [],
                     status: 'received',
                     rawHeaders: parsedEmail.headers || null,

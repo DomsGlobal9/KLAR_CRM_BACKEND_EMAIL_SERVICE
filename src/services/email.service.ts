@@ -34,7 +34,7 @@ export class EmailService {
                 subject: options.subject,
                 body: options.text || null,
                 htmlBody: options.html || null,
-                attachments: [],
+                attachments: options.attachments || [],
                 rawHeaders: null,
                 status: 'queued',
                 error: null,
@@ -43,6 +43,9 @@ export class EmailService {
                 isRead: false,
                 sentAt: null,
                 receivedAt: null,
+                userId: options.userId || null,
+                senderName: options.user_name || null,
+                senderEmail: options.user_mail || null,
             };
 
             savedEmail = await emailMessageRepository.saveOutgoingEmail(emailData);
@@ -83,7 +86,8 @@ export class EmailService {
         to: string,
         subject: string,
         text: string,
-        options?: { leadId?: string; contactId?: string }
+        options?: { leadId?: string; contactId?: string },
+        userId?: string
     ): Promise<any> {
         return this.sendEmail({
             to,
@@ -91,6 +95,7 @@ export class EmailService {
             text,
             leadId: options?.leadId,
             contactId: options?.contactId,
+            userId,
         });
     }
 
@@ -147,9 +152,9 @@ export class EmailService {
                 error: null,
                 leadId: email.leadId || null,
                 contactId: email.contactId || null,
-                isRead: false,
-                sentAt: null,
-                receivedAt: null,
+                userId: (email as any).userId || (email as any).user_id || null,
+                senderName: (email as any).senderName || (email as any).user_name || (email as any).userName || null,
+                senderEmail: (email as any).senderEmail || (email as any).user_mail || (email as any).user_email || (email as any).userMail || null,
             };
 
             const saved = await emailMessageRepository.saveOutgoingEmail(emailData);

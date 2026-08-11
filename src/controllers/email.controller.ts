@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { emailService } from '../services/email.service';
 
 export const emailController = {
+    
     async sendEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text, html, cc, bcc, leadId, contactId } = req.body;
+            const { to, subject, text, html, cc, bcc, leadId, contactId, userId, user_mail, user_name, attachments } = req.body;
 
             if (!to) {
                 return res.status(400).json({
@@ -36,6 +37,10 @@ export const emailController = {
                 bcc,
                 leadId,
                 contactId,
+                userId,
+                user_mail,
+                user_name,
+                attachments
             });
 
             if (!result.success) {
@@ -65,7 +70,7 @@ export const emailController = {
 
     async sendSimpleEmail(req: Request, res: Response) {
         try {
-            const { to, subject, text, leadId, contactId } = req.body;
+            const { to, subject, text, leadId, contactId, userId, user_mail, user_name } = req.body;
 
             if (!to || !subject || !text) {
                 return res.status(400).json({
@@ -74,7 +79,7 @@ export const emailController = {
                 });
             }
 
-            const result = await emailService.sendSimpleEmail(to, subject, text, { leadId, contactId });
+            const result = await emailService.sendSimpleEmail(to, subject, text, { leadId, contactId }, userId);
 
             if (!result.success) {
                 return res.status(500).json({
@@ -103,7 +108,7 @@ export const emailController = {
 
     async sendHtmlEmail(req: Request, res: Response) {
         try {
-            const { to, subject, html, leadId, contactId } = req.body;
+            const { to, subject, html, leadId, contactId, userId } = req.body;
 
             if (!to || !subject || !html) {
                 return res.status(400).json({
@@ -141,7 +146,7 @@ export const emailController = {
 
     async sendBulkEmails(req: Request, res: Response) {
         try {
-            const { emails } = req.body;
+            const { emails, userId } = req.body;
 
             if (!emails || !Array.isArray(emails) || emails.length === 0) {
                 return res.status(400).json({
