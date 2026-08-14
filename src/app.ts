@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import routes from './routes';
 import { corsOptions } from './config/cors.config';
+import { supabaseConfig } from './config/supabase.config';
 
 const app = express();
 
@@ -13,7 +14,13 @@ app.use(cors(corsOptions));
 app.use('/api/emails', routes);
 
 app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: 'email-service' });
+    // environment/target only: host, project and credentials stay in server logs.
+    res.json({
+        status: 'ok',
+        service: 'email-service',
+        environment: supabaseConfig.describe().environment,
+        databaseTarget: supabaseConfig.getDatabaseTarget(),
+    });
 });
 
 export default app;

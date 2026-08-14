@@ -3,11 +3,16 @@ import { envConfig } from './config/env.config';
 import { getRedisClient, closeRedisClient } from './config/redis.config';
 import { initEmailWorker, closeEmailWorker } from './workers/email.worker';
 import { closeEmailQueue } from './queues/email.queue';
+import { verifyDatabaseIdentity } from './drizzle/db';
 
 const PORT = envConfig.PORT || 5013;
 
 async function startServer() {
     try {
+        // Fails fast before any email is accepted if the database is unreachable
+        // or the process resolved to an unexpected environment.
+        await verifyDatabaseIdentity();
+
         getRedisClient();
 
         initEmailWorker();
