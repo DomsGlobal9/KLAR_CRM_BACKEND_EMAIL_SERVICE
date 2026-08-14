@@ -53,7 +53,7 @@ const parseNumber = (value?: string, defaultValue?: number): number => {
 
 export const envConfig: EnvConfig = {
     PORT: parseNumber(process.env.PORT, 5012),
-    NODE_ENV: (process.env.NODE_ENV as EnvConfig["NODE_ENV"]) || "development",
+    NODE_ENV: (process.env.NODE_ENV as EnvConfig["NODE_ENV"]),
 
     CORS_ORIGIN: parseArray(process.env.CORS_ORIGIN),
     CORS_METHODS: parseArray(process.env.CORS_METHODS),
