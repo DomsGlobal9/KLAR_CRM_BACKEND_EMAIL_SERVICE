@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json is committed on purpose: CI installs with `npm ci`, which
+# requires it, and it pins the exact tree that was type-checked and tested.
 yarn.lock
 pnpm-lock.yaml
 

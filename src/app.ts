@@ -14,12 +14,10 @@ app.use(cors(corsOptions));
 app.use('/api/emails', routes);
 
 app.get('/health', (_req, res) => {
-    // environment/target only: host, project and credentials stay in server logs.
     res.json({
         status: 'ok',
         service: 'email-service',
-        environment: supabaseConfig.describe().environment,
-        databaseTarget: supabaseConfig.getDatabaseTarget(),
+        ...supabaseConfig.healthStatus(),
     });
 });
 

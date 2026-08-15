@@ -6,4 +6,9 @@
 import { supabaseConfig } from '../config/supabase.config';
 
 const info = supabaseConfig.describe();
-console.log(JSON.stringify({ environment: info.environment, target: info.target, projectRef: info.projectRef }));
+console.log(JSON.stringify({
+    environment: info.environment,
+    target: info.target,
+    projectRef: info.projectRef,
+    health: supabaseConfig.healthStatus(),
+}));

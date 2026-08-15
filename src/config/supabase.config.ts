@@ -70,6 +70,14 @@ export const supabaseConfig = {
         target: resolved.target,
         ...describeDatabaseUrl(resolved.url),
     }),
+    /**
+     * Exactly what GET /health publishes. Routing facts only — host, project ref
+     * and credentials stay in the server log, which is not publicly reachable.
+     */
+    healthStatus: () => ({
+        environment: envConfig.NODE_ENV,
+        databaseTarget: resolved.target,
+    }),
 };
 
 export const DATABASE_URL = resolved.url;

@@ -40,9 +40,13 @@ after(() => {
 
 /** Runs the probe with exactly the given env (plus PATH), inheriting nothing else. */
 const resolveConfig = (env: Record<string, string | undefined>) => {
+    // Only what the runtime itself needs (tsx/esbuild); nothing that could leak a
+    // real database URL from the developer's or the CI runner's shell.
     const childEnv: Record<string, string> = {
         PATH: process.env.PATH || '',
         SystemRoot: process.env.SystemRoot || '',
+        HOME: process.env.HOME || '',
+        TMPDIR: process.env.TMPDIR || '',
         ...BASE_ENV,
     };
     for (const [key, value] of Object.entries(env)) {
@@ -171,6 +175,34 @@ describe('production data-integrity guard', () => {
 
         assert.equal(r.code, 0, r.stderr);
         assert.equal(r.json().target, 'development');
+    });
+});
+
+describe('health output', () => {
+    test('reports the production environment and target, without secrets', () => {
+        const r = resolveConfig({
+            NODE_ENV: 'production',
+            SUPABASE_DEVELOPMENT_DATABASE_URL: DEV_URL,
+            SUPABASE_PRODUCTION_DATABASE_URL: PROD_URL,
+        });
+
+        assert.equal(r.code, 0, r.stderr);
+        assert.deepEqual(r.json().health, { environment: 'production', databaseTarget: 'production' });
+
+        // The payload is public: it must not carry host, project ref or credentials.
+        const serialized = JSON.stringify(r.json().health);
+        assert.doesNotMatch(serialized, /prod-pooler|prodproject222|:pw@/);
+    });
+
+    test('reports the development environment and target', () => {
+        const r = resolveConfig({
+            NODE_ENV: 'development',
+            SUPABASE_DEVELOPMENT_DATABASE_URL: DEV_URL,
+            SUPABASE_PRODUCTION_DATABASE_URL: PROD_URL,
+        });
+
+        assert.equal(r.code, 0, r.stderr);
+        assert.deepEqual(r.json().health, { environment: 'development', databaseTarget: 'development' });
     });
 });
 
