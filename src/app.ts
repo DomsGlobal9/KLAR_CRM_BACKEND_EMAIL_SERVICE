@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import routes from './routes';
 import { corsOptions } from './config/cors.config';
+import { supabaseConfig } from './config/supabase.config';
 
 const app = express();
 
@@ -13,7 +14,11 @@ app.use(cors(corsOptions));
 app.use('/api/emails', routes);
 
 app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: 'email-service' });
+    res.json({
+        status: 'ok',
+        service: 'email-service',
+        ...supabaseConfig.healthStatus(),
+    });
 });
 
 export default app;
