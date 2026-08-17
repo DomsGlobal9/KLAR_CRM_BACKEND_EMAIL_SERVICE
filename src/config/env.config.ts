@@ -109,8 +109,16 @@ export const envConfig: EnvConfig = {
     SUPABASE_DEVELOPMENT_DATABASE_URL: process.env.SUPABASE_DEVELOPMENT_DATABASE_URL,
     SUPABASE_PRODUCTION_DATABASE_URL: process.env.SUPABASE_PRODUCTION_DATABASE_URL,
 
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    SUPABASE_URL: process.env.SUPABASE_URL || (
+        parseNodeEnv(process.env.NODE_ENV) === 'production'
+            ? 'https://yofkvuiyfkrowsjsvnjm.supabase.co'
+            : 'https://hxyfopjdxyxrdxatzxiu.supabase.co'
+    ),
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || (
+        parseNodeEnv(process.env.NODE_ENV) === 'production'
+            ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvZmt2dWl5Zmtyb3dzanN2bmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MDQzMjAsImV4cCI6MjEwMjI4MDMyMH0.owmy2XqPOJMXNV4XiMRZaqwdhxXwh7GidvwMTTc8Ea8'
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4eWZvcGpkeHl4cmR4YXR6eGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NjYyNzUsImV4cCI6MjA4MjE0MjI3NX0.N5FyhVI59rIpxE8F-Fj8hm4HI7EwZKOp7hwhOjNwaL8'
+    ),
 
     REDIS_HOST: process.env.REDIS_HOST || "localhost",
     REDIS_PORT: parseNumber(process.env.REDIS_PORT, 6379),
