@@ -28,6 +28,14 @@ type EnvConfig = {
     SUPABASE_DEVELOPMENT_DATABASE_URL?: string;
     SUPABASE_PRODUCTION_DATABASE_URL?: string;
 
+    /**
+     * Used only to verify the CRM access token presented by a Socket.IO client,
+     * exactly as the main backend verifies it. Optional: without them realtime
+     * stays off and email ingestion is unaffected.
+     */
+    SUPABASE_URL?: string;
+    SUPABASE_ANON_KEY?: string;
+
     REDIS_HOST: string;
     REDIS_PORT: number;
     REDIS_PASSWORD?: string;
@@ -100,6 +108,9 @@ export const envConfig: EnvConfig = {
 
     SUPABASE_DEVELOPMENT_DATABASE_URL: process.env.SUPABASE_DEVELOPMENT_DATABASE_URL,
     SUPABASE_PRODUCTION_DATABASE_URL: process.env.SUPABASE_PRODUCTION_DATABASE_URL,
+
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
 
     REDIS_HOST: process.env.REDIS_HOST || "localhost",
     REDIS_PORT: parseNumber(process.env.REDIS_PORT, 6379),

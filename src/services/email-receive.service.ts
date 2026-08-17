@@ -4,6 +4,7 @@ import { simpleParser, AddressObject } from 'mailparser';
 import { Readable } from 'stream';
 import { emailConfig } from '../config/email.config';
 import { emailMessageRepository } from '../repositories/email-message.repository';
+import { emitIncomingEmail } from '../realtime/email.socket';
 import { randomUUID } from 'crypto';
 
 class EmailReceiveService {
@@ -161,7 +162,17 @@ class EmailReceiveService {
             receivedAt: parsedEmail.date || new Date(),
         };
 
-        return await emailMessageRepository.saveIncomingEmail(emailData);
+        const saved = await emailMessageRepository.saveIncomingEmail(emailData);
+
+        /**
+         * The only place a realtime event is raised, and only once the row exists.
+         * A failed insert throws before reaching this line, and every duplicate
+         * path above (outgoing echo, known message-id) has already returned — so a
+         * retried SNS delivery re-uses the stored row and emits nothing.
+         */
+        emitIncomingEmail(saved);
+
+        return saved;
     }
 
     private async getParentTrackingId(inReplyTo: string): Promise<string | null> {

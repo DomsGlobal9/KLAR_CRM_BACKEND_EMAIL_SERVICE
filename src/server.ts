@@ -4,6 +4,7 @@ import { getRedisClient, closeRedisClient } from './config/redis.config';
 import { initEmailWorker, closeEmailWorker } from './workers/email.worker';
 import { closeEmailQueue } from './queues/email.queue';
 import { verifyDatabaseIdentity } from './drizzle/db';
+import { initEmailSocket, closeEmailSocket } from './realtime/email.socket';
 
 const PORT = envConfig.PORT || 5013;
 
@@ -22,6 +23,9 @@ async function startServer() {
             console.log(`📬 BullMQ Email Worker initialized & processing background jobs`);
         });
 
+        // Shares the HTTP server above — no extra port, no second process.
+        initEmailSocket(server);
+
         const gracefulShutdown = async (signal: string) => {
             console.log(`\n[Server] Received ${signal}. Stopping process...`);
 
@@ -31,6 +35,7 @@ async function startServer() {
 
             try {
                 await Promise.allSettled([
+                    closeEmailSocket(),
                     closeEmailWorker(),
                     closeEmailQueue(),
                     closeRedisClient(),
